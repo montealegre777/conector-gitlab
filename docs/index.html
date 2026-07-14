@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="es" data-lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Conector GitLab — Guía de configuración | Ruvic</title>
+  <link rel="stylesheet" href="assets/ruvic.css">
+</head>
+<body>
+
+<header class="ruvic-header">
+  <div class="ruvic-header-inner">
+    <p class="ruvic-wordmark">Ruvic</p>
+
+    <h1>
+      <span class="lang-es">Conector GitLab — Guía de configuración</span>
+      <span class="lang-en">GitLab Connector — Setup Guide</span>
+    </h1>
+    <p class="subtitle">
+      <span class="lang-es">Conecta tus proyectos de GitLab a Ruvic Engine para que el agente cree issues, comente Merge Requests y revise el estado de tus pipelines de CI/CD.</span>
+      <span class="lang-en">Connect your GitLab projects to Ruvic Engine so the agent can create issues, comment on Merge Requests, and check your CI/CD pipeline status.</span>
+    </p>
+
+    <div class="meta">
+      <span class="ruvic-badge">GitLab</span>
+      <span class="ruvic-badge">
+        <span class="lang-es">DevOps</span>
+        <span class="lang-en">DevOps</span>
+      </span>
+      <span class="ruvic-badge">v1.0.0</span>
+    </div>
+
+    <div class="lang-switch" role="group" aria-label="Idioma / Language">
+      <button type="button" data-set-lang="es" class="active">ES</button>
+      <button type="button" data-set-lang="en">EN</button>
+    </div>
+  </div>
+</header>
+
+<main class="ruvic-container">
+
+  <!-- ============ ÍNDICE ============ -->
+  <nav class="ruvic-toc" aria-label="Índice">
+    <h2><span class="lang-es">Contenido</span><span class="lang-en">Contents</span></h2>
+    <ol>
+      <li><a href="#que-es"><span class="lang-es">¿Qué es y para qué sirve?</span><span class="lang-en">What is it and what is it for?</span></a></li>
+      <li><a href="#prerrequisitos"><span class="lang-es">Prerrequisitos</span><span class="lang-en">Prerequisites</span></a></li>
+      <li><a href="#fabricante"><span class="lang-es">Configuración en el fabricante (paso a paso)</span><span class="lang-en">Vendor-side setup (step by step)</span></a></li>
+      <li><a href="#permisos"><span class="lang-es">Permisos requeridos</span><span class="lang-en">Required permissions</span></a></li>
+      <li><a href="#ruvic"><span class="lang-es">Configuración en Ruvic</span><span class="lang-en">Setup in Ruvic</span></a></li>
+      <li><a href="#verificacion"><span class="lang-es">Verificación</span><span class="lang-en">Verification</span></a></li>
+      <li><a href="#problemas"><span class="lang-es">Solución de problemas</span><span class="lang-en">Troubleshooting</span></a></li>
+      <li><a href="#faq"><span class="lang-es">Preguntas frecuentes y notas de seguridad</span><span class="lang-en">FAQ and security notes</span></a></li>
+    </ol>
+  </nav>
+
+  <!-- ============ 1. QUÉ ES ============ -->
+  <section id="que-es">
+    <h2><span class="lang-es">1. ¿Qué es y para qué sirve?</span><span class="lang-en">1. What is it and what is it for?</span></h2>
+
+    <div class="lang-es">
+      <p>El conector GitLab permite que el agente de Ruvic gestione issues, comente en Merge Requests, y revise el estado de tus pipelines de CI/CD, directamente en tus proyectos de GitLab. Una vez configurado, puedes pedirle al agente cosas como:</p>
+      <ul>
+        <li>“Crea un issue reportando este bug que me describieron.”</li>
+        <li>“¿Qué issues abiertos tenemos en el proyecto X?”</li>
+        <li>“Comenta en el MR 42 que se ve bien.”</li>
+        <li>“¿Pasó el pipeline de CI en la rama main?”</li>
+      </ul>
+      <p>Operaciones soportadas:</p>
+    </div>
+    <div class="lang-en">
+      <p>The GitLab connector lets the Ruvic agent manage issues, comment on Merge Requests, and check your CI/CD pipeline status, directly on your GitLab projects. Once configured, you can ask the agent things like:</p>
+      <ul>
+        <li>“Create an issue reporting this bug I was told about.”</li>
+        <li>“What open issues do we have in project X?”</li>
+        <li>“Comment on MR 42 that it looks good.”</li>
+        <li>“Did the CI pipeline pass on the main branch?”</li>
+      </ul>
+      <p>Supported operations:</p>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th><span class="lang-es">Operación</span><span class="lang-en">Operation</span></th>
+          <th><span class="lang-es">Qué hace</span><span class="lang-en">What it does</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td><code>devops.create_issue</code></td><td><span class="lang-es">Crea un issue nuevo en un proyecto</span><span class="lang-en">Creates a new issue in a project</span></td></tr>
+        <tr><td><code>devops.list_issues</code></td><td><span class="lang-es">Consulta/filtra issues (abiertos, cerrados, por label)</span><span class="lang-en">Queries/filters issues (open, closed, by label)</span></td></tr>
+        <tr><td><code>devops.comment_on_mr</code></td><td><span class="lang-es">Agrega un comentario a un Merge Request</span><span class="lang-en">Adds a comment to a Merge Request</span></td></tr>
+        <tr><td><code>devops.get_merge_request</code></td><td><span class="lang-es">Consulta el detalle de un MR (estado, si se puede fusionar)</span><span class="lang-en">Gets an MR's details (status, whether it's mergeable)</span></td></tr>
+        <tr><td><code>devops.list_pipelines</code></td><td><span class="lang-es">Consulta el estado de las ejecuciones recientes de CI/CD</span><span class="lang-en">Checks the status of recent CI/CD pipeline runs</span></td></tr>
+        <tr><td><code>devops.close_issue</code></td><td><span class="lang-es">Cierra un issue (acción reversible)</span><span class="lang-en">Closes an issue (reversible action)</span></td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout-warning">
+      <span class="callout-title"><span class="lang-es">Fuera de alcance a propósito</span><span class="lang-en">Out of scope by design</span></span>
+      <span class="lang-es">Este conector <strong>no puede fusionar Merge Requests, eliminar proyectos o ramas, ni hacer force-push</strong>. Son acciones potencialmente destructivas que se dejaron fuera a propósito.</span>
+      <span class="lang-en">This connector <strong>cannot merge Merge Requests, delete projects or branches, or force-push</strong>. These are potentially destructive actions left out by design.</span>
+    </div>
+  </section>
+
+  <!-- ============ 2. PRERREQUISITOS ============ -->
+  <section id="prerrequisitos">
+    <h2><span class="lang-es">2. Prerrequisitos</span><span class="lang-en">2. Prerequisites</span></h2>
+
+    <div class="lang-es">
+      <ul>
+        <li>Una cuenta de <strong>GitLab</strong> (gitlab.com, o una instancia self-managed) con acceso de al menos <strong>Developer</strong> al/los proyecto(s) que se van a usar.</li>
+        <li>Para pruebas: usa un <strong>proyecto de pruebas propio</strong> en vez de un proyecto productivo real.</li>
+      </ul>
+    </div>
+    <div class="lang-en">
+      <ul>
+        <li>A <strong>GitLab</strong> account (gitlab.com, or a self-managed instance) with at least <strong>Developer</strong> access to the project(s) to be used.</li>
+        <li>For testing: use your own <strong>test project</strong> instead of a real production project.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ============ 3. CONFIGURACIÓN EN EL FABRICANTE ============ -->
+  <section id="fabricante">
+    <h2><span class="lang-es">3. Configuración en el fabricante (paso a paso)</span><span class="lang-en">3. Vendor-side setup (step by step)</span></h2>
+
+    <ol class="ruvic-steps">
+      <li>
+        <div class="lang-es">
+          <strong>Ve a la configuración de Access Tokens.</strong>
+          <p>En GitLab, clic en tu foto de perfil (arriba a la derecha) → <strong>Edit profile</strong> → en el menú lateral, <strong>Access Tokens</strong>.</p>
+        </div>
+        <div class="lang-en">
+          <strong>Go to Access Tokens settings.</strong>
+          <p>In GitLab, click your profile picture (top right) → <strong>Edit profile</strong> → in the sidebar, <strong>Access Tokens</strong>.</p>
+        </div>
+      </li>
+      <li>
+        <div class="lang-es">
+          <strong>Crea un token nuevo.</strong>
+          <p>Ponle un nombre descriptivo, ej. <em>"Ruvic GitLab Connector"</em>, y una fecha de expiración (recomendada).</p>
+        </div>
+        <div class="lang-en">
+          <strong>Create a new token.</strong>
+          <p>Give it a descriptive name, e.g. <em>"Ruvic GitLab Connector"</em>, and an expiration date (recommended).</p>
+        </div>
+        <div class="screenshot-placeholder">
+          <span class="lang-es">[ Captura: formulario "Add new token" — reemplazar por assets/img/gl-new-token.png ]</span>
+          <span class="lang-en">[ Screenshot: "Add new token" form — replace with assets/img/gl-new-token.png ]</span>
+        </div>
+      </li>
+      <li>
+        <div class="lang-es">
+          <strong>Selecciona los scopes.</strong>
+          <p>Marca <code>api</code> (acceso completo) para simplicidad, o si prefieres acotar más: <code>read_api</code> + <code>read_repository</code> como mínimo para las operaciones de lectura, agregando <code>write_repository</code> si vas a crear issues/comentar.</p>
+        </div>
+        <div class="lang-en">
+          <strong>Select the scopes.</strong>
+          <p>Check <code>api</code> (full access) for simplicity, or if you prefer to scope it down more: <code>read_api</code> + <code>read_repository</code> at minimum for read operations, adding <code>write_repository</code> if creating issues/commenting.</p>
+        </div>
+      </li>
+      <li>
+        <div class="lang-es">
+          <strong>Crea y copia el token.</strong>
+          <p>Clic en <strong>"Create personal access token"</strong>. Cópialo de inmediato — <strong>GitLab solo lo muestra completo una vez</strong>.</p>
+        </div>
+        <div class="lang-en">
+          <strong>Create and copy the token.</strong>
+          <p>Click <strong>"Create personal access token"</strong>. Copy it immediately — <strong>GitLab only shows it in full once</strong>.</p>
+        </div>
+        <div class="callout callout-warning">
+          <span class="callout-title"><span class="lang-es">Riesgo de seguridad</span><span class="lang-en">Security risk</span></span>
+          <span class="lang-es">Cualquiera que tenga este token puede actuar en tu nombre dentro del alcance otorgado. Trátalo como una contraseña.</span>
+          <span class="lang-en">Anyone with this token can act on your behalf within the granted scope. Treat it like a password.</span>
+        </div>
+      </li>
+      <li>
+        <div class="lang-es">
+          <strong>Confirma que el usuario tenga rol Developer (o superior) en el proyecto.</strong>
+          <p>El scope del token no es suficiente por sí solo — el usuario dueño del token también necesita rol de al menos <strong>Developer</strong> en cada proyecto donde el agente vaya a crear issues o comentar. Revísalo en <strong>Project → Manage → Members</strong>.</p>
+        </div>
+        <div class="lang-en">
+          <strong>Confirm the user has Developer role (or higher) on the project.</strong>
+          <p>The token's scope alone isn't enough — the token's owner also needs at least <strong>Developer</strong> role on each project where the agent will create issues or comment. Check this in <strong>Project → Manage → Members</strong>.</p>
+        </div>
+      </li>
+      <li>
+        <div class="lang-es">
+          <strong>Prueba desde línea de comandos (opcional pero recomendado).</strong>
+        </div>
+        <div class="lang-en">
+          <strong>Test from the command line (optional but recommended).</strong>
+        </div>
+<pre><code>curl --header "PRIVATE-TOKEN: TU_TOKEN" \
+  "https://gitlab.com/api/v4/user"</code></pre>
+        <div class="lang-es"><p>Una respuesta con tus datos de usuario confirma que el token funciona.</p></div>
+        <div class="lang-en"><p>A response with your user data confirms the token works.</p></div>
+      </li>
+    </ol>
+  </section>
+
+  <!-- ============ 4. PERMISOS ============ -->
+  <section id="permisos">
+    <h2><span class="lang-es">4. Permisos requeridos</span><span class="lang-en">4. Required permissions</span></h2>
+
+    <table>
+      <thead>
+        <tr>
+          <th><span class="lang-es">Scope / Rol</span><span class="lang-en">Scope / Role</span></th>
+          <th><span class="lang-es">Para qué lo usa el conector</span><span class="lang-en">Why the connector needs it</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td><code>read_api</code></td><td><span class="lang-es">Necesario para <code>list_issues</code>, <code>get_merge_request</code>, <code>list_pipelines</code></span><span class="lang-en">Needed for <code>list_issues</code>, <code>get_merge_request</code>, <code>list_pipelines</code></span></td></tr>
+        <tr><td><code>api</code> <span class="lang-es">(o <code>write_repository</code>)</span><span class="lang-en">(or <code>write_repository</code>)</span></td><td><span class="lang-es">Necesario para <code>create_issue</code>, <code>comment_on_mr</code>, <code>close_issue</code></span><span class="lang-en">Needed for <code>create_issue</code>, <code>comment_on_mr</code>, <code>close_issue</code></span></td></tr>
+        <tr><td><span class="lang-es">Rol Developer en el proyecto</span><span class="lang-en">Developer role on the project</span></td><td><span class="lang-es">Requisito adicional al scope del token — sin este rol, GitLab rechaza las operaciones de escritura aunque el token tenga el scope correcto</span><span class="lang-en">Additional requirement beyond the token's scope — without this role, GitLab rejects write operations even if the token has the right scope</span></td></tr>
+      </tbody>
+    </table>
+
+    <div class="lang-es"><p>No otorgues el scope <code>sudo</code> ni uses un token de administrador: este conector no lo necesita.</p></div>
+    <div class="lang-en"><p>Don't grant the <code>sudo</code> scope or use an admin token: this connector doesn't need it.</p></div>
+  </section>
+
+  <!-- ============ 5. CONFIGURACIÓN EN RUVIC ============ -->
+  <section id="ruvic">
+    <h2><span class="lang-es">5. Configuración en Ruvic</span><span class="lang-en">5. Setup in Ruvic</span></h2>
+
+    <div class="lang-es">
+      <p>Entra a <strong>Settings → Conectores</strong>, busca la tarjeta <strong>GitLab</strong> y pulsa <strong>Configurar</strong>. Pega el token en el campo <strong>Access Token</strong>, deja los demás campos por defecto salvo que uses una instancia self-managed.</p>
+    </div>
+    <div class="lang-en">
+      <p>Go to <strong>Settings → Connectors</strong>, find the <strong>GitLab</strong> card and click <strong>Configure</strong>. Paste the token into the <strong>Access Token</strong> field, leave the rest as default unless you use a self-managed instance.</p>
+    </div>
+
+    <div class="lang-es"><p>Guarda y pulsa <span class="ruvic-button">Probar conexión</span>.</p></div>
+    <div class="lang-en"><p>Save and click <span class="ruvic-button">Test connection</span>.</p></div>
+  </section>
+
+  <!-- ============ 6. VERIFICACIÓN ============ -->
+  <section id="verificacion">
+    <h2><span class="lang-es">6. Verificación</span><span class="lang-en">6. Verification</span></h2>
+
+    <ol class="ruvic-steps">
+      <li>
+        <div class="lang-es"><strong>Test de conexión exitoso.</strong><p>El botón <em>Probar conexión</em> debe responder: <em>"Conexión exitosa a GitLab (https://gitlab.com/api/v4)"</em>.</p></div>
+        <div class="lang-en"><strong>Successful connection test.</strong><p>The <em>Test connection</em> button should return: <em>"Successful connection to GitLab (https://gitlab.com/api/v4)"</em>.</p></div>
+      </li>
+      <li>
+        <div class="lang-es"><strong>Prueba mínima con el agente.</strong><p>Pide algo de solo lectura primero:</p><blockquote><em>"¿Qué issues abiertos hay en el proyecto X?"</em></blockquote></div>
+        <div class="lang-en"><strong>Minimal test with the agent.</strong><p>Ask something read-only first:</p><blockquote><em>"What open issues does project X have?"</em></blockquote></div>
+      </li>
+    </ol>
+  </section>
+
+  <!-- ============ 7. SOLUCIÓN DE PROBLEMAS ============ -->
+  <section id="problemas">
+    <h2><span class="lang-es">7. Solución de problemas</span><span class="lang-en">7. Troubleshooting</span></h2>
+
+    <table>
+      <thead>
+        <tr>
+          <th><span class="lang-es">Mensaje / síntoma</span><span class="lang-en">Message / symptom</span></th>
+          <th><span class="lang-es">Causa probable y solución</span><span class="lang-en">Likely cause and fix</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="lang-es">"Autenticación fallida... HTTP 401"</span><span class="lang-en">"Authentication failed... HTTP 401"</span></td>
+          <td><span class="lang-es">Token mal copiado, expirado, o revocado. Genera uno nuevo (sección 3) y actualízalo en Ruvic.</span><span class="lang-en">Token mistyped, expired, or revoked. Generate a new one (section 3) and update it in Ruvic.</span></td>
+        </tr>
+        <tr>
+          <td><span class="lang-es">"Permisos insuficientes... HTTP 403" al crear un issue o comentar</span><span class="lang-en">"Insufficient permissions... HTTP 403" when creating an issue or commenting</span></td>
+          <td><span class="lang-es">Lo más común: el usuario dueño del token no tiene rol Developer (o superior) en ese proyecto específico, aunque el token tenga el scope correcto. Revisa Project → Manage → Members.</span><span class="lang-en">Most common cause: the token owner doesn't have Developer role (or higher) on that specific project, even if the token has the right scope. Check Project → Manage → Members.</span></td>
+        </tr>
+        <tr>
+          <td><span class="lang-es">"No encontrado... HTTP 404" en un proyecto que sabes que existe</span><span class="lang-en">"Not found... HTTP 404" on a project you know exists</span></td>
+          <td><span class="lang-es">Revisa que el <code>project_id</code>/ruta esté bien escrito (sensible a mayúsculas), o que el usuario del token tenga al menos acceso de lectura al proyecto.</span><span class="lang-en">Check that the <code>project_id</code>/path is correctly written (case-sensitive), or that the token's user has at least read access to the project.</span></td>
+        </tr>
+        <tr>
+          <td><span class="lang-es">"Se alcanzó el límite de peticiones..."</span><span class="lang-en">"Rate limit reached..."</span></td>
+          <td><span class="lang-es">Espera unos segundos y reintenta; en instancias self-managed, consulta al administrador sobre los límites configurados.</span><span class="lang-en">Wait a few seconds and retry; on self-managed instances, check with the admin about configured limits.</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ============ 8. FAQ Y SEGURIDAD ============ -->
+  <section id="faq">
+    <h2><span class="lang-es">8. Preguntas frecuentes y notas de seguridad</span><span class="lang-en">8. FAQ and security notes</span></h2>
+
+    <h3><span class="lang-es">¿El agente puede fusionar Merge Requests o eliminar proyectos?</span><span class="lang-en">Can the agent merge Merge Requests or delete projects?</span></h3>
+    <div class="lang-es"><p>No. Esta versión del conector no incluye esas acciones, a propósito — son potencialmente destructivas o requieren juicio humano.</p></div>
+    <div class="lang-en"><p>No. This version of the connector doesn't include those actions, by design — they're potentially destructive or require human judgment.</p></div>
+
+    <h3><span class="lang-es">¿Dónde queda guardado el token?</span><span class="lang-en">Where is the token stored?</span></h3>
+    <div class="lang-es"><p>Como secreto en el almacén de credenciales de la plataforma. La interfaz nunca vuelve a mostrarlo.</p></div>
+    <div class="lang-en"><p>As a secret in the platform's credential store. The UI never displays it again.</p></div>
+
+    <h3><span class="lang-es">Rotación de credenciales</span><span class="lang-en">Credential rotation</span></h3>
+    <div class="lang-es"><p>Si le pusiste fecha de expiración al token (recomendado), genera uno nuevo antes de que venza (sección 3) y actualízalo en Ruvic. GitLab también permite "rotar" un token desde su propia página de detalle, generando uno nuevo con el mismo alcance.</p></div>
+    <div class="lang-en"><p>If you set an expiration date on the token (recommended), generate a new one before it expires (section 3) and update it in Ruvic. GitLab also allows "rotating" a token from its own detail page, generating a new one with the same scope.</p></div>
+
+    <h3><span class="lang-es">¿Qué hago si el token se compromete?</span><span class="lang-en">What if the token is compromised?</span></h3>
+    <div class="lang-es"><ol><li>Ve a Access Tokens en GitLab y revoca el token de inmediato.</li><li>Genera uno nuevo con el mismo alcance.</li><li>Actualízalo en el formulario del conector.</li></ol></div>
+    <div class="lang-en"><ol><li>Go to Access Tokens in GitLab and revoke the token immediately.</li><li>Generate a new one with the same scope.</li><li>Update it in the connector form.</li></ol></div>
+
+    <div class="callout callout-warning">
+      <span class="callout-title"><span class="lang-es">Buenas prácticas</span><span class="lang-en">Best practices</span></span>
+      <span class="lang-es">Usa el scope más acotado posible; pon fecha de expiración; nombra el token de forma descriptiva; y verifica que el rol del usuario en cada proyecto sea el mínimo necesario (Developer, no Maintainer/Owner, salvo que se requiera).</span>
+      <span class="lang-en">Use the narrowest scope possible; set an expiration date; name the token descriptively; and verify the user's role on each project is the minimum needed (Developer, not Maintainer/Owner, unless required).</span>
+    </div>
+  </section>
+
+</main>
+
+<footer class="ruvic-footer">
+  <div class="tagline">Opera, factura, escala — aunque tu equipo no esté</div>
+  <div>Ruvic Engine · @ruvic_ai</div>
+</footer>
+
+<script>
+  // Toggle de idioma ES/EN — parte de la plantilla, no modificar.
+  (function () {
+    var buttons = document.querySelectorAll("[data-set-lang]");
+    function setLang(lang) {
+      document.documentElement.setAttribute("data-lang", lang);
+      document.documentElement.setAttribute("lang", lang);
+      buttons.forEach(function (btn) {
+        btn.classList.toggle("active", btn.getAttribute("data-set-lang") === lang);
+      });
+      try { localStorage.setItem("ruvic-docs-lang", lang); } catch (e) {}
+    }
+    buttons.forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        setLang(btn.getAttribute("data-set-lang"));
+      });
+    });
+    try {
+      var saved = localStorage.getItem("ruvic-docs-lang");
+      if (saved === "en" || saved === "es") setLang(saved);
+    } catch (e) {}
+  })();
+</script>
+
+</body>
+</html>
