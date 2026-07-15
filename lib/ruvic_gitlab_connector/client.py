@@ -13,10 +13,12 @@ Fuera de alcance a propósito: fusionar Merge Requests, eliminar
 proyectos o ramas, force-push, o cualquier operación destructiva/
 irreversible — este cliente simplemente no expone esos métodos.
 
-Autenticación: Personal Access Token de GitLab, enviado en el header
-PRIVATE-TOKEN (el método recomendado por GitLab sobre Authorization:
-Bearer). Las credenciales SIEMPRE provienen de variables de entorno
-RUVIC_GITLAB_* (ver config.GitLabConfig.from_env). Prohibido hardcodearlas.
+Autenticación: Personal Access Token (header PRIVATE-TOKEN, el método
+recomendado por GitLab) u OAuth 2.0 con usuario (header Authorization:
+Bearer, con refresh token gestionado por la plataforma), según cómo se
+haya configurado el conector. Las credenciales SIEMPRE provienen de
+variables de entorno RUVIC_GITLAB_* (ver config.GitLabConfig.from_env).
+Prohibido hardcodearlas.
 
 Nota sobre project_id: la API de GitLab acepta tanto el Id numérico de
 un proyecto como su "ruta" (namespace/proyecto) URL-codificada. Este
@@ -26,6 +28,7 @@ falta.
 
 from __future__ import annotations
 
+import time
 from typing import Any
 from urllib.parse import quote
 
@@ -45,7 +48,7 @@ def _encode_project_id(project_id: str | int) -> str:
 
 
 class GitLabClient:
-    """Cliente de GitLab autenticado con un Personal Access Token.
+    """Cliente de GitLab autenticado con Personal Access Token u OAuth2.
 
     Args:
         config: configuración de conexión. Si se omite, se lee de las
@@ -61,6 +64,53 @@ class GitLabClient:
     def __init__(self, config: GitLabConfig | None = None) -> None:
         self.config = config or GitLabConfig.from_env()
         self._logger = get_logger()
+        self._oauth_access_token: str | None = None
+        self._oauth_token_expires_at: float = 0.0
+
+    # ------------------------------------------------------------------ #
+    # OAuth2: obtención/renovación de access token vía refresh_token
+    # ------------------------------------------------------------------ #
+
+    def _get_oauth_access_token(self) -> str:
+        """Obtiene un access token válido, renovándolo con el refresh_token
+        si no hay uno en caché o si está por expirar (los tokens OAuth2 de
+        GitLab expiran cada 2 horas)."""
+        if self._oauth_access_token and time.time() < self._oauth_token_expires_at - 30:
+            return self._oauth_access_token
+
+        try:
+            resp = requests.post(
+                self.config.oauth_token_url,
+                data={
+                    "grant_type": "refresh_token",
+                    "client_id": self.config.client_id,
+                    "client_secret": self.config.client_secret,
+                    "refresh_token": self.config.refresh_token,
+                },
+                timeout=self.config.timeout,
+            )
+        except Timeout as exc:
+            raise GitLabNetworkError(
+                "Tiempo de espera agotado renovando el token OAuth2 de GitLab."
+            ) from exc
+        except RequestsConnectionError as exc:
+            raise GitLabNetworkError(
+                f"No se pudo conectar a {self.config.oauth_token_url} para renovar el token."
+            ) from exc
+        except RequestException as exc:
+            raise GitLabNetworkError(f"Error de red renovando token OAuth2: {exc}") from exc
+
+        if resp.status_code != 200:
+            raise GitLabAuthError(
+                f"No se pudo renovar el token OAuth2 de GitLab (HTTP {resp.status_code}): "
+                f"{resp.text[:300]}. Puede que la autorización haya sido revocada — "
+                "re-autoriza el conector en Settings → Conectores."
+            )
+
+        payload = resp.json()
+        self._oauth_access_token = payload["access_token"]
+        self._oauth_token_expires_at = time.time() + int(payload.get("expires_in", 7200))
+        return self._oauth_access_token
 
     # ------------------------------------------------------------------ #
     # Peticiones HTTP
@@ -69,7 +119,10 @@ class GitLabClient:
     def _request(self, method: str, path: str, **kwargs: Any) -> requests.Response:
         url = f"{self.config.api_base_url}{path}"
         headers = kwargs.pop("headers", {})
-        headers["PRIVATE-TOKEN"] = self.config.access_token
+        if self.config.auth_mode == "oauth2":
+            headers["Authorization"] = f"Bearer {self._get_oauth_access_token()}"
+        else:
+            headers["PRIVATE-TOKEN"] = self.config.access_token
         try:
             return requests.request(
                 method, url, headers=headers, timeout=self.config.timeout, **kwargs
