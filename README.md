@@ -28,6 +28,7 @@ pip install -e ./lib
 | `RUVIC_GITLAB_ACCESS_TOKEN` | Sí | Personal Access Token de GitLab |
 | `RUVIC_GITLAB_API_BASE_URL` | No | Default `https://gitlab.com/api/v4`; usar la URL de la instancia self-managed si aplica |
 | `RUVIC_GITLAB_REQUEST_TIMEOUT` | No | Segundos, default `20` |
+| `RUVIC_GITLAB_REFRESH_TOKEN` | No | Si está presente (junto con `CLIENT_ID`/`CLIENT_SECRET`), activa el modo OAuth2 con usuario en vez de PAT — la plataforma la gestiona automáticamente al usar el botón "Autorizar" |
 
 ## Permisos / prerrequisitos en GitLab
 

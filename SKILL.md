@@ -34,6 +34,8 @@ from ruvic_gitlab_connector import GitLabClient
 client = GitLabClient()  # lee RUVIC_GITLAB_* del entorno automáticamente
 ```
 
+El conector soporta dos formas de autenticación configuradas por el admin (transparente para el código que generes): **Personal Access Token** (estático) u **OAuth2 con usuario** (el admin autorizó desde Settings → Conectores; la librería renueva el access token automáticamente cada ~2 horas usando el refresh token). No necesitas saber cuál de los dos está activo.
+
 ## Sobre `project_id`
 
 GitLab identifica proyectos por Id numérico **o** por su ruta completa "grupo/subgrupo/proyecto". Este conector acepta ambos formatos indistintamente:
