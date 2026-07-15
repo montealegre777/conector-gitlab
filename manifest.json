@@ -1,0 +1,109 @@
+{
+  "id": "gitlab",
+  "name": "GitLab",
+  "version": "1.0.0",
+  "description": "Gestión de proyectos e issues en GitLab: crear issues, consultarlos, comentar en Merge Requests y revisar el estado de pipelines de CI/CD",
+  "icon": "icon.svg",
+  "category": "devops",
+  "library": {
+    "package": "ruvic-gitlab-connector",
+    "install": "pip install git+https://github.com/tu-org/conector-gitlab.git#subdirectory=lib",
+    "import_name": "ruvic_gitlab_connector"
+  },
+  "auth_modes": [
+    {
+      "id": "personal_access_token",
+      "label": "Personal Access Token",
+      "fields": [
+        {
+          "key": "access_token",
+          "label": "Access Token",
+          "type": "password",
+          "secret": true,
+          "required": true,
+          "placeholder": "glpat-...",
+          "help_text": "Personal Access Token de GitLab (User Settings → Access Tokens), con scope 'api' o los específicos que necesites (read_api, read_repository)."
+        },
+        {
+          "key": "api_base_url",
+          "label": "URL base de la API (opcional)",
+          "type": "text",
+          "required": false,
+          "default": "https://gitlab.com/api/v4",
+          "help_text": "Déjalo por defecto salvo que uses una instancia self-managed de GitLab (ej. https://gitlab.tuempresa.com/api/v4)"
+        },
+        {
+          "key": "request_timeout",
+          "label": "Timeout de peticiones (segundos)",
+          "type": "number",
+          "required": false,
+          "default": "20"
+        }
+      ]
+    },
+    {
+      "id": "oauth2",
+      "label": "Autorizar con GitLab (OAuth2, usuario)",
+      "fields": [
+        {
+          "key": "client_id",
+          "label": "Application ID",
+          "type": "text",
+          "required": true,
+          "help_text": "Application ID de tu GitLab OAuth Application (User Settings → Applications), con la Redirect URI de la plataforma registrada."
+        },
+        {
+          "key": "client_secret",
+          "label": "Secret",
+          "type": "password",
+          "secret": true,
+          "required": true
+        },
+        {
+          "key": "refresh_token",
+          "label": "Autorización de la cuenta",
+          "type": "oauth2_authorization",
+          "secret": true,
+          "required": true,
+          "oauth2": {
+            "authorization_url": "https://gitlab.com/oauth/authorize",
+            "token_url": "https://gitlab.com/oauth/token",
+            "scopes": ["api"],
+            "pkce": true,
+            "capture": "refresh_token",
+            "client_credentials": "user"
+          }
+        },
+        {
+          "key": "api_base_url",
+          "label": "URL base de la API (opcional)",
+          "type": "text",
+          "required": false,
+          "default": "https://gitlab.com/api/v4",
+          "help_text": "Déjalo por defecto salvo que uses una instancia self-managed de GitLab"
+        },
+        {
+          "key": "request_timeout",
+          "label": "Timeout de peticiones (segundos)",
+          "type": "number",
+          "required": false,
+          "default": "20"
+        }
+      ]
+    }
+  ],
+  "env_prefix": "RUVIC_GITLAB_",
+  "operations": [
+    "devops.create_issue",
+    "devops.list_issues",
+    "devops.comment_on_mr",
+    "devops.get_merge_request",
+    "devops.list_pipelines",
+    "devops.close_issue"
+  ],
+  "test_connection": true,
+  "docs": {
+    "skill": "SKILL.md",
+    "permissions_note": "El token necesita, como mínimo, el scope 'api' (o los granulares 'read_api' + 'write_repository' según GitLab) y el rol de al menos Developer sobre los proyectos específicos que el agente vaya a usar. Otorga acceso solo a los proyectos necesarios. Este conector no permite fusionar Merge Requests, eliminar proyectos/ramas, ni force-push."
+  }
+}
