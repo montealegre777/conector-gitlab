@@ -3,6 +3,10 @@
   "name": "GitLab",
   "version": "1.0.0",
   "description": "Gestión de proyectos e issues en GitLab: crear issues, consultarlos, comentar en Merge Requests y revisar el estado de pipelines de CI/CD",
+  "name_en": "GitLab",
+  "description_en": "Project and issue management in GitLab: create issues, query them, comment on Merge Requests, and check CI/CD pipeline status",
+  "category_en": "devops",
+  "keywords": ["gitlab", "git", "devops", "ci/cd", "cicd", "issues", "merge requests", "pipelines", "repositorios", "repositories", "control de versiones", "version control"],
   "icon": "icon.svg",
   "category": "devops",
   "library": {
