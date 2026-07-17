@@ -26,6 +26,8 @@ El código generado **NUNCA hardcodea credenciales**. Siempre se leen de variabl
 
 Si estas variables NO existen, el conector no está configurado: no generes código que lo use; indica al usuario que lo configure en **Settings → Conectores**.
 
+El código generado **NUNCA** usa nombres de variable con segmento de alias (`_DEFAULT_`, `_TEST_`, `_PRODUCCION_`, etc.) — siempre `RUVIC_GITLAB_{CAMPO}` tal cual, sin importar cuántas instancias de este conector haya configuradas. Esto aplica salvo que dichos nombres aparezcan explícitamente en una sección autogenerada al final de este skill.
+
 ## Conexión (siempre igual)
 
 ```python
